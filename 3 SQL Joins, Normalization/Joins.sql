@@ -116,12 +116,37 @@ FROM STUDENT
 WHERE St_Fname LIKE '_a%'
 
 /*
+
 'a%h'
 '%a_'
 'ahm%'
-
+'[ahm]%'
+'[^ahm]%'
+'[a-h]%'
+'[^a-h]%'
 
 */
+
+SELECT St_Fname, Dept_Id, St_Age
+FROM Student
+ORDER BY St_Address
+
+SELECT St_Fname, Dept_Id, St_Age
+FROM Student
+ORDER BY 1
+
+SELECT St_Fname, Dept_Id, St_Age
+FROM Student
+ORDER BY 3
+
+SELECT St_Fname, Dept_Id, St_Age
+FROM Student
+ORDER BY Dept_Id ASC, St_Age DESC
+
+
+
+
+
 
 
 
