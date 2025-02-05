@@ -137,6 +137,32 @@ select ins_name, ins_id
 from Instructor
 
 
+select St_Fname, st_age, Dept_Id
+from Student
+order by St_Address
 
 
+select St_Fname, st_age, Dept_Id
+from Student
+order by 1
 
+select St_Fname, st_age, Dept_Id
+from Student
+order by 2
+
+
+select St_Fname, st_age, Dept_Id
+from Student
+order by Dept_Id asc, st_age desc
+
+
+-- These queries won't work because department table is a parent table
+delete from Department where Dept_Id = 20
+update Department set Dept_Id=4000 where Dept_Id = 20
+
+-- built-in functions
+-- Agg functions
+-- getdate()  isnull()   coalesce() concat() convert()  year() month() day()
+-- substring()
+select DB_NAME()
+select SUSER_NAME()
