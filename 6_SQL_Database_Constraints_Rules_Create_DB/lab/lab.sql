@@ -65,12 +65,99 @@ VALUES(25348, 'Mathew', 'Smith', 'd3', 2500),
 -- 1-Add new employee with EmpNo =11111 In the works_on table [what will happen]
 INSERT INTO Works_on(EmpNo, ProjectNo, Job)
 Values(11111, 'p1', 'Clerk')
--- Error: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Works_on_Employee". The conflict occurred in database "SD_DB", table "dbo.Employee", column 'EmpNo'.
+-- ERROR: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Works_on_Employee". The conflict occurred in database "SD_DB", table "dbo.Employee", column 'EmpNo'.
 -- That is because there is no employee that has EmpNo=11111
 
 -- 2-Change the employee number 10102  to 11111  in the works on table [what will happen]
-
+UPDATE Works_on
+	SET EmpNo=11111
+	WHERE EmpNo=10102
+-- ERROR: The UPDATE statement conflicted with the FOREIGN KEY constraint "FK_Works_on_Employee". The conflict occurred in database "SD_DB", table "dbo.Employee", column 'EmpNo'.
 
 -- 3-Modify the employee number 10102 in the employee table to 22222. [what will happen]
+UPDATE Employee
+	SET EmpNo=22222
+	WHERE EmpNo=10102
+-- ERROR: The UPDATE statement conflicted with the REFERENCE constraint "FK_Works_on_Employee". The conflict occurred in database "SD_DB", table "dbo.Works_on", column 'EmpNo'.
 
+-- 4-Delete the employee with id 10102
+DELETE FROM Employee
+WHERE EmpNo=10102
+-- ERROR: The DELETE statement conflicted with the REFERENCE constraint "FK_Works_on_Employee". The conflict occurred in database "SD_DB", table "dbo.Works_on", column 'EmpNo'.
+
+
+-- 2.	Create the following schema and transfer the following tables to it 
+--		a.	Company Schema 
+--			i.	Department table (Programmatically)
+--			ii.	Project table (using wizard)
+--		b.	Human Resource Schema
+--			i.	  Employee table (Programmatically)
+
+CREATE SCHEMA Company
+
+ALTER SCHEMA Company TRANSFER Department
+
+CREATE SCHEMA [Human Resource]
+
+ALTER SCHEMA [Human Resource] TRANSFER Human_Resource.Employee
+
+-- 3.	 Write query to display the constraints for the Employee table.
+
+sp_helpconstraint '[Human Resource].Employee'
+
+
+-- 4.	Create Synonym for table Employee as Emp and then run the following queries and describe the results
+--		a.	Select * from Employee
+--		b.	Select * from [Human Resource].Employee
+--		c.	Select * from Emp
+--		d.	Select * from [Human Resource].Emp
+
+
+CREATE SYNONYM Emp for [Human Resource].Employee
+
+Select * from Employee
+-- ERROR: Because Employee table is not in the default schema (dbo)
+
+Select * from [Human Resource].Employee
+-- Works Fine
+
+Select * from Emp
+-- Works Fine
+
+Select * from [Human Resource].Emp
+-- ERROR: Emp is already a synonym to [Human Resource].Employee
+
+
+-- 5.	Increase the budget of the project where the manager number is 10102 by 10%.
+UPDATE Project
+	SET Budget += (Budget * 0.1)
+	WHERE MANAGER_NUM =10102
+
+
+-- 6.	Change the name of the department for which the employee named James works.The new department name is Sales.
+UPDATE [Company].Department
+	SET DeptName = 'Sales'
+WHERE DeptNo = (SELECT Dept_No FROM [Human Resource].Employee
+				WHERE Emp_Fname = 'James')
+
+-- 7.	Change the enter date for the projects for those employees who work in project p1 and belong to department ‘Sales’. The new date is 12.12.2007.
+UPDATE Works_on
+	SET Enter_Date = '12.12.2007'
+WHERE ProjectNo = 'p1' 
+AND EmpNo IN (SELECT EmpNo 
+			FROM [Human Resource].Employee e
+			INNER JOIN Company.Department d
+			ON e.Dept_No = d.DeptNo
+			WHERE d.DeptName = 'Sales'
+			)
+
+
+-- 8.	Delete the information in the works_on table for all employees who work for the department located in KW.
+DELETE FROM Works_on
+WHERE EmpNo IN (SELECT EmpNo 
+			FROM [Human Resource].Employee e
+			INNER JOIN Company.Department d
+			ON e.Dept_No = d.DeptNo
+			WHERE d.Location = 'KW'
+			)
 
