@@ -242,16 +242,175 @@ BEGIN CATCH
 END CATCH
 
 
+---------------------------
+-- Functions
+---------------------------
+-- Built-in Functions
+-- User Defined Functions
+
+--1. Built-in Functions
+-- NULL -- > ISNULL(), COALESCE(), NULLIF() 
+-- SYSTEM --> DB_NAME(), SUSER_NAME()
+-- CONVERT --> CONVERT(), CAST(), FORMAT()
+-- STRING --> SUBSTRING(), UPPER(), LOWER(), LEN()
+-- DATE --> GETDATE(), YEAR(), MONTH(), DAY()
+-- AGGREGATE --> COUNT(), MAX(), MIN(), AVG(), SUM()
+-- MATH --> POWER(), LOG(), SIN(), COS(), TAN()
+-- RANKING --> ROW_NUMBER(), RANK(), DENSE_RANK(), NTILE()
+-- LOGICAL FUNCTIONS --> IIF, CHOOSE
+-- WINDOWING --> LEAD(), LAG(), FIRST_VALUE(), LAST_VALUE()
+
+-- Built-in functions called scaler functions
+-- Return only one value
+
+--2. User Defined Functions
+-- We can create 3 types of functions
+--	1. Scaler Function
+--	2. Inline table Function
+--	3. Multi Statement Table Valued Function
+
+-- Select Statements only
+-- Must Return something
+-- Return 1 value --> scaler function
+-- Return Table (depends on the function body)
+-- If the body only has `select` --> Inline Table Function
+-- If the body select with any logic (e.g if, declare variable, while, ...etc) --> Multi statement table valued function
+
+---- Functions
+select GETDATE()
+
+select ISNULL(st_fname, '') from Student
+
+select UPPER(st_fname), LOWER(st_lname) from Student
+
+select st_fname, len(st_fname) from Student
+
+select max(st_fname)
+from Student
+
+select coalesce(st_fname, st_lname, '')
+from Student
 
 
+SELECT top(1)St_Fname
+from Student
+ORDER BY len(st_fname) DESC
+
+select power(salary, 2) from Instructor
+
+select CONVERT(varchar(20), getdate(), 101)
+
+select FORMAT(getdate(), 'dd-MM-yyyy')
+
+select DB_NAME(), SUSER_NAME()
+
+go
+
+-- =======================
+-- Create My Own Functions
+-- =======================
+
+CREATE FUNCTION getsname(@id int)
+RETURNS VARCHAR(20)
+	begin
+		DECLARE @name varchar(20)
+		select @name=st_fname from student
+			WHERE student.St_Id = @id
+		return @name
+	end
+
+go
+
+SELECT dbo.GETSNAME(1)
+go
+-----------------------------
+CREATE FUNCTION GetInstructor(@did int)
+RETURNS table
+as
+return
+(
+	select ins_name, salary * 12 as totalsal
+	from Instructor
+	where Dept_Id = @did
+)
+
+go
+
+SELECT * from GetInstructor(10)
+
+select ins_name from GetInstructor(10)
+
+select sum(totalsal) from GetInstructor(10)
+go
+----------------------------
+-- Multi-statement functions
+----------------------------
+
+CREATE FUNCTION GetStuds(@format varchar(20))
+RETURNS @t TABLE
+	(
+	 id int,
+	 ename varchar(20)
+	)
+AS 
+	BEGIN
+		if @format = 'first'
+			INSERT INTO @t
+			SELECT st_id, st_fname from Student
+		else if @format = 'last'
+			INSERT INTO @t
+			SELECT st_id, St_Lname from Student
+		else if @format = 'full'
+			INSERT INTO @t
+			SELECT st_id, CONCAT(St_Fname, ' ', St_Lname) from Student
+		RETURN
+	END
+
+go
+
+SELECT * FROM GetStuds('full')
+
+-------------------------------------
+-- Windowing
+-- LEAD, LAG, FIRST_VALUE, LAST_VALUE
+-------------------------------------
+
+SELECT s.St_Id as sid, St_Fname as sname, grade, Crs_Name as Cname INTO grades
+FROM Student s, Stud_Course sc, Course c
+where s.St_Id = sc.St_Id and sc.Crs_Id = c.Crs_Id
+
+select * from grades
+
+SELECT sname, grade, Cname,
+	prod_prev = LAG(sname) over(order by grade),
+	prod_next = LEAD(sname) over(order by grade)
+from grades
 
 
+SELECT *
+FROM(
+	SELECT sname, grade, Cname,
+		prod_prev = LAG(sname) over(order by grade),
+		prod_next = LEAD(sname) over(order by grade)
+	from grades) AS newTable
+WHERE sname = 'Saly'
 
 
+SELECT sname, grade, cname,
+	prod_prev = LAG(grade) over(partition by cname order by grade),
+	prod_next = LEAD(grade) over(partition by cname order by grade)
+from grades
 
+-------------
+SELECT sname, grade,
+	First = FIRST_VALUE(sname) over(order by grade),
+	last = LAST_VALUE(sname) over(order by grade)
+from grades
 
-
-
+SELECT sname, grade, cname,
+	First = FIRST_VALUE(sname) over(partition by cname order by grade),
+	last = LAST_VALUE(sname) over(partition by cname order by grade ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+from grades
 
 
 
